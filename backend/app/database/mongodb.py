@@ -1,7 +1,10 @@
-"""MongoDB connection lifecycle management."""
+"""MongoDB connection lifecycle and dependency management."""
 
+from collections.abc import AsyncIterator
 from typing import Optional
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -15,11 +18,13 @@ class MongoDBConnection:
         self._client: Optional[AsyncIOMotorClient] = None
         self._database: Optional[AsyncIOMotorDatabase] = None
 
-    async def connect(self, uri: str, database_name: str) -> None:
-        """Create the MongoDB client and select its configured database."""
-        self._client = AsyncIOMotorClient(uri)
+    async def connect(self, uri: str, database_name: str, min_pool_size: int = 1, max_pool_size: int = 20, server_selection_timeout_ms: int = 5_000) -> None:
+        """Connect to MongoDB Atlas and configure the meetings collection index."""
+        self._client = AsyncIOMotorClient(uri, minPoolSize=min_pool_size, maxPoolSize=max_pool_size, serverSelectionTimeoutMS=server_selection_timeout_ms, retryWrites=True)
         self._database = self._client[database_name]
-        logger.info("MongoDB client configured for database '%s'", database_name)
+        await self._client.admin.command("ping")
+        await self._database.meetings.create_index("original_filename", unique=True)
+        logger.info("Connected to MongoDB database '%s'", database_name)
 
     async def disconnect(self) -> None:
         """Close the MongoDB client when the application stops."""
@@ -38,3 +43,8 @@ class MongoDBConnection:
 
 
 mongodb = MongoDBConnection()
+
+
+async def get_database() -> AsyncIterator[AsyncIOMotorDatabase]:
+    """Provide the initialized MongoDB database to API dependencies."""
+    yield mongodb.database

@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Initialize and release shared infrastructure resources."""
-    await mongodb.connect(settings.mongodb_uri, settings.mongodb_database)
+    await mongodb.connect(uri=settings.mongodb_uri, database_name=settings.mongodb_database, min_pool_size=settings.mongodb_min_pool_size, max_pool_size=settings.mongodb_max_pool_size, server_selection_timeout_ms=settings.mongodb_server_selection_timeout_ms)
     logger.info("Application startup complete")
     try:
         yield

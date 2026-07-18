@@ -1,12 +1,12 @@
 """Pydantic schemas for meeting metadata and API responses."""
 
 from datetime import datetime
-from enum import StrEnum
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class MeetingStatus(StrEnum):
+class MeetingStatus(str,Enum):
     """Lifecycle states for a meeting recording."""
 
     UPLOADED = "uploaded"

@@ -1,6 +1,6 @@
 """MongoDB repository for meeting records."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from bson import ObjectId
@@ -19,7 +19,7 @@ class MeetingRepository:
 
     async def create_meeting(self, meeting: MeetingCreate) -> MeetingResponse:
         """Insert a meeting document and return its persisted representation."""
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         document = meeting.model_dump(mode="json") | {"created_at": now, "updated_at": now}
         result = await self._collection.insert_one(document)
         document["_id"] = result.inserted_id
@@ -48,7 +48,7 @@ class MeetingRepository:
             return None
         document = await self._collection.find_one_and_update(
             {"_id": ObjectId(meeting_id)},
-            {"$set": {"status": status.value, "updated_at": datetime.now(UTC)}},
+            {"$set": {"status": status.value, "updated_at": datetime.now(timezone.utc)}},
             return_document=ReturnDocument.AFTER,
         )
         return self._to_response(document) if document else None
